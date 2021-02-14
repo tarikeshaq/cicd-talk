@@ -1,7 +1,10 @@
 use actix_web::{get, middleware, App, Error, HttpResponse, HttpServer};
+
+#[macro_use]
+extern crate diesel;
 // use diesel::prelude::*;
 // use diesel::r2d2::ConnectionManager;
-
+mod schema;
 #[get("/")]
 async fn hello_world() -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().body("Hello world!"))
