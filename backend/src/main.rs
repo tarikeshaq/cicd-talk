@@ -1,10 +1,28 @@
-use actix_web::{get, middleware, App, Error, HttpResponse, HttpServer};
+use actix_web::{get, middleware, web, App, Error, HttpResponse, HttpServer};
 
 #[macro_use]
 extern crate diesel;
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
+mod actions;
+mod models;
 mod schema;
+
+type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
+
+#[get("/courses")]
+async fn get_all_courses(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+    let conn = pool
+        .get()
+        .map_err(|_| HttpResponse::InternalServerError().finish())?;
+    let courses = web::block(move || actions::load_courses(&conn))
+        .await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            HttpResponse::InternalServerError().finish()
+        })?;
+    Ok(HttpResponse::Ok().json(courses))
+}
 
 #[get("/")]
 async fn hello_world() -> Result<HttpResponse, Error> {
@@ -31,7 +49,7 @@ async fn main() -> std::io::Result<()> {
             .data(pool.clone())
             .wrap(middleware::Logger::default())
             .service(hello_world)
-        //TODO: Add services here
+            .service(get_all_courses)
     })
     .bind(&bind)?
     .run()
