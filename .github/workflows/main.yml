@@ -38,6 +38,7 @@ jobs:
           - stable
     env:
       working-directory: ./backend/
+      DATABASE_TEST_URL: postgres://admin:admin@localhost/bucs-test
     services:
       database:
         image: postgres:latest
@@ -45,7 +46,7 @@ jobs:
           POSTGRES_USER: admin
           POSTGRES_PASSWORD: admin
           POSTGRES_DB: bucs-test
-          DATABASE_URL: postgres://admin:admin@localhost/bucs-test
+          DATABASE_URL: ${{env.DATABASE_TEST_URL}}
 
         volumes:
           - data:/var/lib/postgresql/data/
