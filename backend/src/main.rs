@@ -1,14 +1,8 @@
 use actix_web::{get, middleware, web, App, Error, HttpResponse, HttpServer};
-
-#[macro_use]
-extern crate diesel;
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
-mod actions;
-mod models;
-mod schema;
-
 type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
+use backend::actions;
 
 #[get("/courses")]
 async fn get_all_courses(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
