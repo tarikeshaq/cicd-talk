@@ -1,0 +1,78 @@
+name: Main
+on: [push, pull_request]
+
+jobs:
+  check:
+    name: Check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        rust:
+          - stable
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+
+  test:
+    name: Test Suite
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        rust:
+          - stable
+    env:
+      working-directory: ./backend/
+    services:
+      database:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: admin
+          POSTGRES_DB: bucs-test
+          DATABASE_URL: postgres://admin:admin@localhost/bucs-test
+
+        volumes:
+          - ./data/:/var/lib/postgresql/data/
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+
+      - name: Install postgres driver
+        run: |
+          sudo apt-get install libpq-dev
+
+      - name: Install diesel
+        run: |
+          cargo install diesel_cli --no-default-features --features postgres
+
+      - name: Run migrations
+        run: |
+          diesel --database-url postgres://admin:admin@localhost/bucs-test setup
+        working-directory: ${{env.working-directory}}
+
+      - name: Run cargo test
+        run: cargo test --release --all-features
+        working-directory: ${{env.working-directory}}
